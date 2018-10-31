@@ -21,12 +21,24 @@ async function run() {
 }
 
 async function login() {
-    await page.type('#email', user_data.email, {delay: 30})
-    await page.type('#pass', user_data.password, {delay: 30})
+    await page.type('#email', user_data.email, { delay: 30 })
+    await page.type('#pass', user_data.password, { delay: 30 })
     let loginButton = await page.$('#loginbutton input')
     await loginButton.click()
-    await page.waitForNavigation()
-    await page.screenshot({ path: 'facebook.png' })
+    await Promise.all([
+        await page.waitForNavigation(),
+        await page.screenshot({ path: 'facebook_1.png' }),
+        await page.click('div[data-click=profile_icon]>a')
+    ])
+    await Promise.all([
+        await page.waitFor(3000),
+        await page.screenshot({ path: 'facebook_2.png' }),
+        await page.click('a[data-tab-key=friends]')
+    ])
+    await Promise.all([
+        await page.waitFor(3000),
+        await page.screenshot({ path: 'facebook_3.png' })
+    ])
     await browser.close()
 }
 
