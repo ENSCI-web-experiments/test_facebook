@@ -6,12 +6,105 @@ const express = require('express')
 const app = express()
 const url = require('url')
 
-app.get('/friends', function (req, res) {
+const natural = require('natural')
+const Analyzer = natural.SentimentAnalyzer
+const stemmerEN = natural.PorterStemmer
+const stemmerFR = natural.PorterStemmerFr
+
+let tokenizerEN = new natural.WordTokenizer()
+let tokenizerFR = new natural.AggressiveTokenizerFr()
+let analyzerEN = new Analyzer('English', stemmerEN, 'afinn')
+let analyzerFR = new Analyzer('French', stemmerFR, 'pattern')
+
+app.get('/friends', function(req, res) {
     friends(req, res)
 })
 
-app.get('/images', function (req, res) {
+app.get('/images', function(req, res) {
     images(req, res)
+})
+
+app.get('/tokens', function(req, res) {
+    let data = {
+        text: req.query.text,
+        lang: req.query.lang
+    }
+    let lang = data.lang
+    if (lang === undefined) {
+        lang = 'en'
+    }
+    let text = data.text
+    if (text !== undefined) {
+        if (/^fr/i.test(lang) === true) {
+            res.json({
+                error: false,
+                lang: lang,
+                text: text,
+                tokens: tokenizerFR.tokenize(text),
+                reason: null
+            })
+        } else {
+            res.json({
+                error: false,
+                lang: lang,
+                text: text,
+                tokens: tokenizerEN.tokenize(text),
+                reason: null
+            })
+        }
+    } else {
+        res.json({
+            error: true,
+            lang: lang,
+            text: text,
+            tokens: [],
+            reason: 'no text provided'
+        })
+    }
+})
+
+app.get('/sentiment', function(req, res) {
+    let data = {
+        text: req.query.text,
+        lang: req.query.lang
+    }
+    let lang = data.lang
+    if (lang === undefined) {
+        lang = 'en'
+    }
+    let text = data.text
+    if (text !== undefined) {
+        if (/^fr/i.test(lang) === true) {
+            let tokens = tokenizerFR.tokenize(text)
+            res.json({
+                error: false,
+                lang: lang,
+                text: text,
+                tokens: tokens,
+                sentiment: analyzerFR.getSentiment(tokens),
+                reason: null
+            })
+        } else {
+            let tokens = tokenizerEN.tokenize(text)
+            res.json({
+                error: false,
+                lang: lang,
+                text: text,
+                tokens: tokens,
+                sentiment: analyzerEN.getSentiment(tokens),
+                reason: null
+            })
+        }
+    } else {
+        res.json({
+            error: true,
+            lang: lang,
+            text: text,
+            tokens: [],
+            sentiment: 0,
+            reason: 'no text provided'
+        })
+    }
 })
 
 let browser, page
@@ -72,7 +165,7 @@ async function friends(req, res) {
 
 async function init() {
     browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ['--disable-notifications']
     })
     page = await browser.newPage()
@@ -148,6 +241,6 @@ async function getFriends() {
     })
 }
 
-app.listen(8090, function () {
-  console.log('Facebook scraper listening on port 8090')
+app.listen(8090, function() {
+    console.log('Facebook scraper listening on port 8090')
 })
