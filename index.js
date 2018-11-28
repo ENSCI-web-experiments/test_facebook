@@ -222,7 +222,7 @@ async function getFriends() {
         let friends = await page.$$eval('div.fsl.fwb.fcb>a', friends => friends.map((a) => {
             return {
                 name: a.innerText,
-                href: a.href
+                href: a.href.split('?')[0]
             }
         }))
         friends.forEach((friend) => {
